@@ -1,4 +1,5 @@
 /*
+ * make the file extensions universal.
  * learn how do the includes work.
  * remove the ~.slo and large.fi files. 
  * set max len of bytes in strings, check if the str len is < bytes buffers.
@@ -14,6 +15,8 @@
 #include <time.h>
 #include "file_bytes.c"
 #define MAX_BYTES 50
+#define SHA256_buf 32
+
 
 int chk_dir(char *large_file_name, char *dir_name, char *export_path){
 	char cmd_buf[100];
@@ -91,8 +94,8 @@ int main(){
 	
 	memset(export_path, 0x00, MAX_BYTES);
 	
+	//hash_fn();
 	chk_dir(large_file_name, dir_name, export_path);	
-
 	time_export(export_path);
 	return 0;
 }

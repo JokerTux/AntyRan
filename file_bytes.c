@@ -2,31 +2,81 @@
 #include <stdio.h>
 #include <string.h>
 #include <dirent.h>
+#include <stdbool.h>
 #include <sys/random.h>
+#include "hash.c"
 #include "file_bytes.h"
 #define MAX_PATH_LEN 255
+#define SHA256_buf 32
 
 
 struct dirent *ent;
 
 
-int cp_large_fi(char *n_path, char *export_path){
-	//printf("%s path\n", n_path);
+int del_files(int paths_len){
+	//rm *.slo buf
+	char d_slo[MAX_PATH_LEN + 10];
+	//rm *.fi buf
+	char d_fi[MAX_PATH_LEN + 10];
+	char c_rm[] = "rm ";
+	char c_slo_slo[] = "*~.slo*";
+	char c_fi_fi[] = "*~.fi*";
+	
+	memset(d_slo, 0x00, (MAX_PATH_LEN + 10));	
+	memset(d_fi, 0x00, (MAX_PATH_LEN + 10));
+
+	printf("%s d_fi\n", d_fi);
+	for(int counter_p = 0; counter_p < paths_len; counter_p++){
+		//execute commands for each path 
+		strncat(d_slo, c_rm, strlen(c_rm));
+		strncat(d_slo, path[counter_p], strlen(path[counter_p]));
+		strncat(d_slo, c_slo_slo, strlen(c_slo_slo));
+		//printf("%s \n", d_slo);
+		system(d_slo);
+		
+		
+		strncat(d_fi, c_rm, strlen(c_rm));
+		strncat(d_fi, path[counter_p], strlen(path[counter_p]));
+		strncat(d_fi, c_fi_fi, strlen(c_fi_fi));
+		//printf("%s \n", d_fi);
+		system(d_fi);
+		
+		memset(d_slo, 0x00, (MAX_PATH_LEN + 10));	
+		memset(d_fi, 0x00, (MAX_PATH_LEN + 10));
+		
+	
+	}
+
+	
 	return 0;
 }
 
 
 int mk_file(unsigned char bytes_form[buf_len], char *export_path){
 	DIR *dir;
+	bool flag_a = 0;
+	unsigned char *hash_file = bytes_form;
 	int paths_len = *(&path + 1) - path;
 	char file_name[MAX_PATH_LEN];
 	char cp_large_fi_cmd[60];
 	char cp_cmd[] = "cp ";
 	char space_char[] = " ";
 	char dot[] = ".";
-	char dotdot[] = "..";	
-	memset(cp_large_fi_cmd, 0x00, 60);
+	char dotdot[] = "..";
+	unsigned char *hash_from_file[SHA256_buf];	
+	memset( cp_large_fi_cmd, 0x00, 60);
+	printf("_----_\n");	
+	
+	calc_hash((unsigned char *)hash_file, buf_len, (unsigned char *)hash_from_file);
+	for(int i_de = 0; i_de < SHA256_buf; i_de++){
+		
 
+		printf("%c", hash_from_file[i_de]);
+		printf("\n %d i_de \n", i_de);
+	} 
+	
+	del_files(paths_len);
+	
 	//cp command
 	strncat(cp_large_fi_cmd, cp_cmd, strlen(cp_cmd));
 	strncat(cp_large_fi_cmd, export_path, strlen(export_path));
@@ -39,6 +89,9 @@ int mk_file(unsigned char bytes_form[buf_len], char *export_path){
 		while((ent = readdir(dir)) !=0){
 			int counter = strlen(ent -> d_name) + strlen(path[c_p]) + strlen(out_file_ext);
 			
+			if((strlen(ent -> d_name) == 1 && strncmp(ent -> d_name, dot, sizeof(dot)) == 0) || strncmp(ent -> d_name, dotdot, sizeof(dotdot)) == 0 ){
+				continue;	
+			}
 
 			printf("%s \n", ent -> d_name);
 			//file path
@@ -57,18 +110,21 @@ int mk_file(unsigned char bytes_form[buf_len], char *export_path){
 			
 			//outfile .slo
 			strncat(n_path, out_file_ext, strlen(out_file_ext));
-		
-			if((strlen(ent -> d_name) == 1 && strncmp(ent -> d_name, dot, sizeof(dot)) == 0) || strncmp(ent -> d_name, dotdot, sizeof(dotdot)) == 0 ){
-				continue;	
-			}
 
 			FILE *f_p = fopen(n_path, "wb");
 			//printf("%s \n", n_path);
 			fwrite(bytes_form, buf_len, 1, f_p);
 			fclose(f_p);
 			
+			FILE *f_p1 = fopen(n_path, "rb");
+			hash_path(f_p1, hash_from_file);
+			fclose(f_p1);
+
+			
+			
 			//create the large_file
 			system(cp_n_path);
+
 
 		}
 
